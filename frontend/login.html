@@ -57,7 +57,7 @@
   <h2>Login</h2>
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
+  <button id="loginBtn">Login</button>
   <p style="text-align:center">New user? <a href="signup.html">Signup</a></p>
   <div class="links">
     <a href="privacy.html">Privacy</a>
@@ -65,54 +65,6 @@
     <a href="support.html">Support</a>
   </div>
 </div>
-<script>
-function getApiBase() {
-  const override = localStorage.getItem("careerCompassApiBaseUrl");
-  if (override) return override.replace(/\/$/, "");
-  if (window.location.protocol === "file:") return "http://localhost:5000";
-  if ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "5000") {
-    return `${window.location.protocol}//${window.location.hostname}:5000`;
-  }
-  return window.location.origin;
-}
-
-const API = getApiBase();
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  if (!email || !password) {
-    alert("Please enter email and password");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API}/login`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ email, password })
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      if (data.requiresVerification) {
-        alert(data.error || "Verify your email first");
-        window.location.href = `verify.html?email=${encodeURIComponent(data.email || email)}`;
-        return;
-      }
-
-      alert(data.error || "Login failed");
-      return;
-    }
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("careerCompassUserEmail", data.email || email);
-    window.location.href = "home.html";
-  } catch (err) {
-    alert("Unable to reach the server. Please try again.");
-  }
-}
-</script>
+<script src="js/login-page.js"></script>
 </body>
 </html>
