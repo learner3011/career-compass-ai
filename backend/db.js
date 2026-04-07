@@ -1,5 +1,4 @@
 const path = require("path");
-const sqlite3 = require("sqlite3").verbose();
 const { Pool } = require("pg");
 
 const isPostgres = Boolean(process.env.DATABASE_URL);
@@ -14,6 +13,7 @@ function convertPlaceholders(sql) {
 }
 
 function createSqliteAdapter() {
+  const sqlite3 = require("sqlite3").verbose();
   const db = new sqlite3.Database(sqlitePath);
 
   function run(sql, params = []) {
