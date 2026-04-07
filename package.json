@@ -1,0 +1,8 @@
+{
+  "name": "career-compass-ai",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "start": "npm start --prefix backend"
+  }
+}
