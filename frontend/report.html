@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Report</title>
+  <style>
+    :root {
+      --bg: #f6efe7;
+      --panel: #fffdf9;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --accent: #d97706;
+      --good: #15803d;
+      --bad: #b91c1c;
+      --line: #eadbc8;
+      --shadow: 0 18px 44px rgba(91, 58, 17, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 28px 18px 40px;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at top right, #ffe7c5 0, transparent 26%), linear-gradient(180deg, #fff8ee 0%, var(--bg) 100%);
+      color: var(--ink);
+    }
+    .page { max-width: 980px; margin: 0 auto; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .profile-chip { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; background: rgba(107, 74, 31, 0.08); border: 1px solid var(--line); }
+    .profile-badge { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f59e0b, #b45309); color: white; font-weight: 800; }
+    .profile-email { font-size: 13px; color: var(--ink); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); padding: 22px; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    h1, h2, h3 { margin-top: 0; }
+    .eyebrow { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: #fde7c7; color: #b45309; text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; font-weight: 700; }
+    .stat-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+    .stat { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+    .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .value { font-size: 30px; font-weight: 800; }
+    .good { border-left: 6px solid var(--good); }
+    .bad { border-left: 6px solid var(--bad); }
+    .muted { color: var(--muted); line-height: 1.6; }
+    ul { padding-left: 20px; line-height: 1.7; margin-bottom: 0; }
+    button { border: none; border-radius: 14px; padding: 12px 16px; font: inherit; font-weight: 700; cursor: pointer; background: linear-gradient(135deg, var(--accent), #f59e0b); color: white; }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+    .secondary-btn { background: #efe2cf; color: #6b4a1f; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+    .resume-preview { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 16px; white-space: pre-wrap; line-height: 1.6; max-height: 420px; overflow: auto; }
+    .status { margin-top: 12px; color: var(--muted); font-size: 14px; }
+    .footer-links { margin-top: 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .footer-links a { color: #b45309; text-decoration: none; font-weight: 600; }
+    @media (max-width: 760px) { .grid, .stat-row { grid-template-columns: 1fr; } .topbar { flex-direction: column; align-items: flex-start; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div>
+        <span class="eyebrow">Detailed View</span>
+        <h1>Resume Report</h1>
+      </div>
+      <div class="topbar-right">
+        <div class="profile-chip">
+          <div class="profile-badge" id="profileBadge">U</div>
+          <div class="profile-email" id="profileEmail">user@example.com</div>
+        </div>
+        <div class="actions" style="margin-top:0;">
+          <button class="secondary-btn" onclick="window.location.href='home.html'">Home</button>
+          <button class="secondary-btn" onclick="window.location.href='history.html'">History</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 id="reportTitle">Loading report...</h2>
+      <p class="muted" id="reportMeta"></p>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="label">Overall Score</div>
+          <div class="value" id="score">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Job Match</div>
+          <div class="value" id="jobMatch">0%</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="downloadBtn">Download Analysis PDF</button>
+        <button id="fixResumeBtn">Fix Resume</button>
+        <button id="downloadEnhancedBtn" class="secondary-btn" disabled>Download Enhanced PDF</button>
+      </div>
+      <div id="actionStatus" class="status"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card good" id="good"></div>
+      <div class="card bad" id="bad"></div>
+    </div>
+
+    <div class="card" id="suggestions"></div>
+    <div class="card">
+      <h2>Enhanced Resume Preview</h2>
+      <p class="muted">Generate the improved version to review and download it.</p>
+      <div id="enhancedPreview" class="resume-preview">No enhanced resume generated yet.</div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms & Conditions</a>
+        <a href="support.html">Support</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getApiBase() {
+      const override = localStorage.getItem("careerCompassApiBaseUrl");
+      if (override) return override.replace(/\/$/, "");
+      if (window.location.protocol === "file:") return "http://localhost:5000";
+      if ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "5000") {
+        return `${window.location.protocol}//${window.location.hostname}:5000`;
+      }
+      return window.location.origin;
+    }
+
+    const API = getApiBase();
+    const token = localStorage.getItem("token");
+    const USER_EMAIL_KEY = "careerCompassUserEmail";
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    if (!token) {
+      window.location.href = "login.html";
+    }
+
+    function handleUnauthorized() {
+      localStorage.removeItem("token");
+      localStorage.removeItem(USER_EMAIL_KEY);
+      window.location.href = "login.html";
+    }
+
+    function setUserEmail(email) {
+      const safeEmail = email || "user@example.com";
+      document.getElementById("profileEmail").innerText = safeEmail;
+      document.getElementById("profileBadge").innerText = safeEmail.charAt(0).toUpperCase();
+      localStorage.setItem(USER_EMAIL_KEY, safeEmail);
+    }
+
+    async function syncProfile() {
+      const storedEmail = localStorage.getItem(USER_EMAIL_KEY);
+      if (storedEmail) setUserEmail(storedEmail);
+
+      try {
+        const res = await fetch(`${API}/me`, {
+          headers: { Authorization: token }
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.email) setUserEmail(data.email);
+      } catch {}
+    }
+
+    function setStatus(message) {
+      document.getElementById("actionStatus").innerText = message || "";
+    }
+
+    async function downloadBlob(url, filename) {
+      try {
+        const res = await fetch(url, {
+          headers: { Authorization: token }
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          if (res.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          alert(errorData.error || "Download failed");
+          return;
+        }
+
+        const blob = await res.blob();
+        const objectUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(objectUrl);
+      } catch (err) {
+        alert("Unable to reach the server. Please try again.");
+      }
+    }
+
+    async function enhanceResume() {
+      const button = document.getElementById("fixResumeBtn");
+      button.disabled = true;
+      button.innerText = "Fixing...";
+      setStatus("Generating enhanced resume...");
+
+      try {
+        const res = await fetch(`${API}/enhance-resume/${id}`, {
+          method: "POST",
+          headers: { Authorization: token }
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          alert(data.error || "Failed to enhance resume");
+          setStatus("");
+          return;
+        }
+
+        document.getElementById("enhancedPreview").innerText =
+          data.enhancedResume || "No enhanced resume generated.";
+        document.getElementById("downloadEnhancedBtn").disabled = !data.enhancedResume;
+        setStatus("Enhanced resume ready.");
+      } catch (err) {
+        alert("Unable to reach the server. Please try again.");
+        setStatus("");
+      } finally {
+        button.disabled = false;
+        button.innerText = "Fix Resume";
+      }
+    }
+
+    async function loadReport() {
+      let data;
+
+      try {
+        const res = await fetch(`${API}/report/${id}`, {
+          headers: { Authorization: token }
+        });
+        data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          alert(data.error || "Failed to load report");
+          if (res.status === 401) {
+            handleUnauthorized();
+          }
+          return;
+        }
+      } catch (err) {
+        alert("Unable to reach the server. Please try again.");
+        return;
+      }
+
+      const good = Array.isArray(data.good) ? data.good : [];
+      const bad = Array.isArray(data.bad) ? data.bad : [];
+      const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
+
+      document.getElementById("reportTitle").innerText = data.filename || "Resume Report";
+      document.getElementById("reportMeta").innerText =
+        data.jobRole ? `Target role: ${data.jobRole}` : "General resume analysis";
+      document.getElementById("score").innerText = data.score ?? 0;
+      document.getElementById("jobMatch").innerText = `${data.jobMatch ?? 0}%`;
+
+      document.getElementById("good").innerHTML =
+        `<h2>Strengths</h2><ul>${good.map(item => `<li>${item}</li>`).join("") || "<li>No strengths available.</li>"}</ul>`;
+
+      document.getElementById("bad").innerHTML =
+        `<h2>Weaknesses</h2><ul>${bad.map(item => `<li>${item}</li>`).join("") || "<li>No weaknesses available.</li>"}</ul>`;
+
+      document.getElementById("suggestions").innerHTML =
+        `<h2>Suggestions</h2><ul>${suggestions.map(item => `<li>${item}</li>`).join("") || "<li>No suggestions available.</li>"}</ul>`;
+
+      if (data.enhanced_resume) {
+        document.getElementById("enhancedPreview").innerText = data.enhanced_resume;
+        document.getElementById("downloadEnhancedBtn").disabled = false;
+        setStatus("Enhanced resume already available.");
+      }
+
+      document.getElementById("downloadBtn").onclick = () =>
+        downloadBlob(`${API}/download/${id}`, "report.pdf");
+      document.getElementById("fixResumeBtn").onclick = enhanceResume;
+      document.getElementById("downloadEnhancedBtn").onclick = () =>
+        downloadBlob(`${API}/download-enhanced/${id}`, "enhanced-resume.pdf");
+    }
+
+    syncProfile();
+    loadReport();
+  </script>
+</body>
+</html>

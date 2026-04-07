@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at top left, #ffe4be 0, transparent 30%), linear-gradient(135deg, #fff3e0, #f2e7d7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 18px;
+    }
+    .card {
+      background: rgba(255,255,255,0.97);
+      padding: 32px;
+      border-radius: 20px;
+      width: 380px;
+      box-shadow: 0 20px 45px rgba(91, 58, 17, 0.15);
+      border: 1px solid #efddc7;
+    }
+    h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 12px;
+      border: 1px solid #d8c6ae;
+      font: inherit;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px;
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .secondary {
+      background: #efe2cf;
+      color: #6b4a1f;
+    }
+    .status {
+      margin-top: 12px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .helper {
+      margin-top: 8px;
+      color: #9a3412;
+      font-size: 13px;
+    }
+    .links {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .links a {
+      color: #d97706;
+      margin: 0 6px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Verify Your Email</h2>
+    <p>Enter the 6-digit verification code sent to your email address.</p>
+    <input id="email" placeholder="Email">
+    <input id="code" placeholder="Verification code" maxlength="6">
+    <div class="actions">
+      <button onclick="verifyEmail()">Verify</button>
+      <button class="secondary" id="resendBtn" onclick="resendCode()">Resend Code</button>
+    </div>
+    <div id="status" class="status"></div>
+    <div id="helper" class="helper"></div>
+    <div class="links">
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="support.html">Support</a>
+    </div>
+  </div>
+
+  <script>
+    function getApiBase() {
+      const override = localStorage.getItem("careerCompassApiBaseUrl");
+      if (override) return override.replace(/\/$/, "");
+      if (window.location.protocol === "file:") return "http://localhost:5000";
+      if ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "5000") {
+        return `${window.location.protocol}//${window.location.hostname}:5000`;
+      }
+      return window.location.origin;
+    }
+
+    const API = getApiBase();
+    const params = new URLSearchParams(window.location.search);
+    const emailInput = document.getElementById("email");
+    const resendBtn = document.getElementById("resendBtn");
+    emailInput.value = params.get("email") || "";
+    let resendCountdown = 30;
+    let resendTimer;
+
+    function setStatus(message) {
+      document.getElementById("status").innerText = message || "";
+    }
+
+    function setHelper(message) {
+      document.getElementById("helper").innerText = message || "";
+    }
+
+    function startResendCooldown(seconds = 30) {
+      clearInterval(resendTimer);
+      resendCountdown = seconds;
+      resendBtn.disabled = true;
+      resendBtn.innerText = `Resend in ${resendCountdown}s`;
+      setHelper("Please wait before requesting another code.");
+
+      resendTimer = setInterval(() => {
+        resendCountdown -= 1;
+
+        if (resendCountdown <= 0) {
+          clearInterval(resendTimer);
+          resendBtn.disabled = false;
+          resendBtn.innerText = "Resend Code";
+          setHelper("");
+          return;
+        }
+
+        resendBtn.innerText = `Resend in ${resendCountdown}s`;
+      }, 1000);
+    }
+
+    async function verifyEmail() {
+      const email = emailInput.value.trim();
+      const code = document.getElementById("code").value.trim();
+
+      if (!email || !code) {
+        alert("Enter email and verification code");
+        return;
+      }
+
+      setStatus("Verifying...");
+
+      try {
+        const res = await fetch(`${API}/verify-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, code })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setStatus("");
+          alert(data.error || "Verification failed");
+          return;
+        }
+
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("careerCompassUserEmail", data.email || email);
+        }
+
+        setStatus("Email verified. Redirecting to home...");
+        setTimeout(() => {
+          window.location.href = "home.html";
+        }, 1200);
+      } catch (err) {
+        setStatus("");
+        alert("Unable to reach the server. Please try again.");
+      }
+    }
+
+    async function resendCode() {
+      const email = emailInput.value.trim();
+
+      if (!email) {
+        alert("Enter email first");
+        return;
+      }
+
+      if (resendBtn.disabled) {
+        return;
+      }
+
+      setStatus("Sending a new code...");
+
+      try {
+        const res = await fetch(`${API}/resend-verification`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setStatus("");
+          alert(data.error || "Unable to resend code");
+          return;
+        }
+
+        setStatus(data.message || "Verification code sent again.");
+        startResendCooldown();
+      } catch (err) {
+        setStatus("");
+        alert("Unable to reach the server. Please try again.");
+      }
+    }
+
+    startResendCooldown();
+  </script>
+</body>
+</html>

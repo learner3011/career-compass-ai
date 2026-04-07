@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Compass AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #f5efe6;
+      --panel: #fffdf8;
+      --panel-strong: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --accent: #d97706;
+      --accent-dark: #b45309;
+      --accent-soft: #fde7c7;
+      --good: #15803d;
+      --bad: #b91c1c;
+      --line: #eadfcf;
+      --shadow: 0 18px 45px rgba(91, 58, 17, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #ffe2b8 0, transparent 30%),
+        linear-gradient(180deg, #fff7ec 0%, #f5efe6 100%);
+      min-height: 100vh;
+    }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      background: rgba(33, 24, 12, 0.45);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .hidden { display: none; }
+
+    .spinner {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 6px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #fff;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 32px;
+      background: rgba(39, 26, 7, 0.92);
+      color: #fff7ed;
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: 0.02em;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: #fed7aa;
+      font-size: 14px;
+    }
+
+    .nav-buttons,
+    .action-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .profile-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px 8px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .profile-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+
+    .profile-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .profile-label {
+      font-size: 11px;
+      color: #fed7aa;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .profile-email {
+      font-size: 13px;
+      color: #fff7ed;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .hero-copy {
+      background:
+        linear-gradient(145deg, rgba(217, 119, 6, 0.08), rgba(255, 255, 255, 0.92)),
+        var(--panel-strong);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero-copy h2,
+    .hero-form h2,
+    .section-title {
+      margin: 14px 0 10px;
+      font-size: 28px;
+    }
+
+    .hero-copy p,
+    .hint,
+    .empty-text {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .hero-form label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #4b5563;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid #d6c4ab;
+      background: #fff;
+      font: inherit;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 220px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+      transform: none;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--accent), #f59e0b);
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #efe2cf;
+      color: #6b4a1f;
+    }
+
+    .ghost-btn {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff7ed;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .progress-track {
+      height: 14px;
+      background: #eadfcf;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #f59e0b, #d97706);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    .list-box {
+      min-height: 220px;
+    }
+
+    .list-box.good {
+      border-left: 6px solid var(--good);
+    }
+
+    .list-box.bad {
+      border-left: 6px solid var(--bad);
+    }
+
+    ul {
+      padding-left: 20px;
+      line-height: 1.7;
+    }
+
+    .suggestions-card ul {
+      margin-bottom: 0;
+    }
+
+    .result-panel.hidden-panel {
+      display: none;
+    }
+
+    .resume-preview {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      max-height: 420px;
+      overflow: auto;
+      color: #374151;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .footer-links {
+      margin-top: 18px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+
+    .footer-links a {
+      color: var(--accent-dark);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .grid,
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        padding: 18px 20px;
+        align-items: flex-start;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .brand h1 {
+        font-size: 24px;
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .profile-email {
+        max-width: 140px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loader" class="loader hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <header class="header">
+    <div class="brand">
+      <h1>Career Compass AI</h1>
+      <p>Analyze your resume, improve it, and keep the latest result ready.</p>
+    </div>
+
+    <div class="header-right">
+      <div class="profile-chip">
+        <div class="profile-badge" id="profileBadge">U</div>
+        <div class="profile-text">
+          <span class="profile-label">Signed in as</span>
+          <span class="profile-email" id="profileEmail">user@example.com</span>
+        </div>
+      </div>
+      <div class="nav-buttons">
+        <button class="ghost-btn" onclick="goHistory()">History</button>
+        <button class="ghost-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="card hero-copy">
+        <span class="eyebrow">Resume Intelligence</span>
+        <h2>See what is working, what is missing, and how to improve it.</h2>
+        <p>
+          Upload a PDF resume, get instant scoring with strengths, weaknesses, and suggestions,
+          then generate an enhanced version you can download as a polished PDF.
+        </p>
+        <p>
+          Uploaded resume data is kept so you can access analysis history, reports, and enhanced resume versions later.
+        </p>
+        <div class="footer-links">
+          <a href="privacy.html">Privacy Policy</a>
+          <a href="terms.html">Terms & Conditions</a>
+          <a href="support.html">Support</a>
+        </div>
+      </div>
+
+      <div class="card hero-form">
+        <h2>Start Analysis</h2>
+        <div class="field">
+          <label for="jobRole">Target job role</label>
+          <input id="jobRole" type="text" placeholder="Example: Frontend Developer">
+        </div>
+        <div class="field">
+          <label for="resume">Resume PDF</label>
+          <input type="file" id="resume" accept="application/pdf,.pdf">
+        </div>
+        <div class="action-row">
+          <button class="primary-btn" id="analyzeBtn" onclick="uploadResume()">Analyze</button>
+          <button class="secondary-btn" onclick="clearResults()">Clear</button>
+        </div>
+        <p class="hint">Your latest analysis stays here until you clear it.</p>
+      </div>
+    </section>
+
+    <section id="resultPanel" class="result-panel hidden-panel">
+      <div class="card">
+        <span class="eyebrow">Latest Analysis</span>
+        <h2 class="section-title">Resume Score Overview</h2>
+        <p class="muted" id="analysisMeta"></p>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Overall Score</div>
+            <div class="stat-value" id="score">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Job Match</div>
+            <div class="stat-value" id="jobMatch">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Report ID</div>
+            <div class="stat-value" id="reportIdLabel" style="font-size:16px;">-</div>
+          </div>
+        </div>
+
+        <div class="progress-track">
+          <div id="progress" class="progress-bar"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card"><canvas id="chart"></canvas></div>
+        <div class="card"><canvas id="radar"></canvas></div>
+      </div>
+
+      <div class="grid">
+        <div class="card list-box good" id="goodBox"></div>
+        <div class="card list-box bad" id="badBox"></div>
+      </div>
+
+      <div class="card suggestions-card" id="suggestionsBox"></div>
+
+      <div class="card">
+        <span class="eyebrow">Resume Fixer</span>
+        <h2 class="section-title">Generate an enhanced resume</h2>
+        <p class="muted">
+          Use the latest analysis to produce a cleaner, more ATS-friendly resume draft that you can download as PDF.
+        </p>
+        <div class="action-row">
+          <button class="primary-btn" id="fixResumeBtn" onclick="enhanceResume()">Fix Resume</button>
+          <button class="secondary-btn" id="downloadEnhancedBtn" onclick="downloadEnhancedResume()" disabled>Download Enhanced PDF</button>
+        </div>
+        <div id="enhancedResumePreview" class="resume-preview" style="margin-top:16px;">Generate the enhanced resume to preview it here.</div>
+      </div>
+    </section>
+
+    <section id="emptyState" class="card">
+      <span class="eyebrow">No Analysis Yet</span>
+      <h2 class="section-title">Upload a resume to begin.</h2>
+      <p class="empty-text">
+        Once analyzed, the result will stay on this page even if you visit history and return later.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    function getApiBase() {
+      const override = localStorage.getItem("careerCompassApiBaseUrl");
+      if (override) return override.replace(/\/$/, "");
+      if (window.location.protocol === "file:") return "http://localhost:5000";
+      if ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "5000") {
+        return `${window.location.protocol}//${window.location.hostname}:5000`;
+      }
+      return window.location.origin;
+    }
+
+    const API = getApiBase();
+    const STORAGE_KEY = "careerCompassLatestAnalysis";
+    const ENHANCED_KEY = "careerCompassEnhancedResume";
+    const USER_EMAIL_KEY = "careerCompassUserEmail";
+    let chart;
+    let radar;
+
+    if (!localStorage.getItem("token")) {
+      window.location.href = "login.html";
+    }
+
+    function setUserEmail(email) {
+      const safeEmail = email || "user@example.com";
+      localStorage.setItem(USER_EMAIL_KEY, safeEmail);
+      document.getElementById("profileEmail").innerText = safeEmail;
+      document.getElementById("profileBadge").innerText = safeEmail.charAt(0).toUpperCase();
+    }
+
+    async function syncProfile() {
+      const storedEmail = localStorage.getItem(USER_EMAIL_KEY);
+      if (storedEmail) {
+        setUserEmail(storedEmail);
+      }
+
+      try {
+        const res = await fetch(`${API}/me`, {
+          headers: { Authorization: localStorage.getItem("token") }
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok && data.email) {
+          setUserEmail(data.email);
+        }
+      } catch {}
+    }
+
+    function handleUnauthorized() {
+      localStorage.removeItem("token");
+      localStorage.removeItem(USER_EMAIL_KEY);
+      alert("Your session has expired. Please login again.");
+      window.location.href = "login.html";
+    }
+
+    function setLoading(isLoading) {
+      document.getElementById("loader").classList.toggle("hidden", !isLoading);
+      document.getElementById("analyzeBtn").disabled = isLoading;
+      document.getElementById("fixResumeBtn").disabled = isLoading;
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem(USER_EMAIL_KEY);
+      window.location.href = "login.html";
+    }
+
+    function goHistory() {
+      window.location.href = "history.html";
+    }
+
+    function getSavedAnalysis() {
+      try {
+        const value = localStorage.getItem(STORAGE_KEY);
+        return value ? JSON.parse(value) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function getSavedEnhancedResume() {
+      return localStorage.getItem(ENHANCED_KEY) || "";
+    }
+
+    function saveAnalysis(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function saveEnhancedResume(text) {
+      localStorage.setItem(ENHANCED_KEY, text || "");
+    }
+
+    function clearResults() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ENHANCED_KEY);
+      document.getElementById("jobRole").value = "";
+      document.getElementById("resume").value = "";
+      document.getElementById("resultPanel").classList.add("hidden-panel");
+      document.getElementById("emptyState").style.display = "block";
+      document.getElementById("enhancedResumePreview").innerText = "Generate the enhanced resume to preview it here.";
+      document.getElementById("downloadEnhancedBtn").disabled = true;
+      document.getElementById("analysisMeta").innerText = "";
+      document.getElementById("goodBox").innerHTML = "";
+      document.getElementById("badBox").innerHTML = "";
+      document.getElementById("suggestionsBox").innerHTML = "";
+      document.getElementById("progress").style.width = "0%";
+      document.getElementById("score").innerText = "0";
+      document.getElementById("jobMatch").innerText = "0";
+      document.getElementById("reportIdLabel").innerText = "-";
+      if (chart) chart.destroy();
+      if (radar) radar.destroy();
+    }
+
+    function renderAnalysis(data) {
+      if (!data) {
+        clearResults();
+        return;
+      }
+
+      const good = Array.isArray(data.analysis?.good) ? data.analysis.good : [];
+      const bad = Array.isArray(data.analysis?.bad) ? data.analysis.bad : [];
+      const suggestions = Array.isArray(data.analysis?.suggestions) ? data.analysis.suggestions : [];
+      const breakdown = data.breakdown || {};
+      const enhancedResume = getSavedEnhancedResume();
+
+      document.getElementById("resultPanel").classList.remove("hidden-panel");
+      document.getElementById("emptyState").style.display = "none";
+      document.getElementById("jobRole").value = data.jobRole || "";
+      document.getElementById("score").innerText = `${data.score ?? 0}`;
+      document.getElementById("jobMatch").innerText = `${data.jobMatch ?? 0}%`;
+      document.getElementById("reportIdLabel").innerText = data.reportId || "-";
+      document.getElementById("analysisMeta").innerText =
+        `${data.filename || "Resume"}${data.jobRole ? ` - ${data.jobRole}` : ""}`;
+      document.getElementById("progress").style.width = `${data.score ?? 0}%`;
+
+      if (chart) chart.destroy();
+      chart = new Chart(document.getElementById("chart"), {
+        type: "bar",
+        data: {
+          labels: ["Strengths", "Weaknesses"],
+          datasets: [{
+            label: "Resume Analysis",
+            backgroundColor: ["#15803d", "#b91c1c"],
+            data: [good.length, bad.length]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: true }
+      });
+
+      if (radar) radar.destroy();
+      radar = new Chart(document.getElementById("radar"), {
+        type: "radar",
+        data: {
+          labels: ["Skills", "Experience", "Format"],
+          datasets: [{
+            label: "Breakdown",
+            data: [
+              breakdown.skills ?? 0,
+              breakdown.experience ?? 0,
+              breakdown.format ?? 0
+            ],
+            backgroundColor: "rgba(217, 119, 6, 0.2)",
+            borderColor: "#d97706",
+            pointBackgroundColor: "#b45309"
+          }]
+        },
+        options: {
+          scales: {
+            r: {
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          }
+        }
+      });
+
+      document.getElementById("goodBox").innerHTML =
+        `<h3>Strengths</h3><ul>${good.map(item => `<li>${item}</li>`).join("") || "<li>No strengths available.</li>"}</ul>`;
+
+      document.getElementById("badBox").innerHTML =
+        `<h3>Weaknesses</h3><ul>${bad.map(item => `<li>${item}</li>`).join("") || "<li>No weaknesses available.</li>"}</ul>`;
+
+      document.getElementById("suggestionsBox").innerHTML =
+        `<span class="eyebrow">Suggestions</span><h2 class="section-title">How to improve this resume</h2><ul>${suggestions.map(item => `<li>${item}</li>`).join("") || "<li>No suggestions available.</li>"}</ul>`;
+
+      document.getElementById("enhancedResumePreview").innerText =
+        enhancedResume || "Generate the enhanced resume to preview it here.";
+      document.getElementById("downloadEnhancedBtn").disabled = !enhancedResume || !data.reportId;
+    }
+
+    async function uploadResume() {
+      const file = document.getElementById("resume").files[0];
+      if (!file) return alert("Upload a resume first.");
+      if (file.type && file.type !== "application/pdf") {
+        return alert("Please upload a PDF resume.");
+      }
+
+      setLoading(true);
+
+      try {
+        const form = new FormData();
+        form.append("resume", file);
+        form.append("jobRole", document.getElementById("jobRole").value);
+
+        const res = await fetch(`${API}/upload-resume`, {
+          method: "POST",
+          headers: { Authorization: localStorage.getItem("token") },
+          body: form
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          alert(data.error || "Failed to analyze resume");
+          return;
+        }
+
+        const enrichedData = {
+          ...data,
+          filename: file.name,
+          jobRole: document.getElementById("jobRole").value || "General"
+        };
+
+        saveAnalysis(enrichedData);
+        saveEnhancedResume("");
+        renderAnalysis(enrichedData);
+      } catch (err) {
+        alert("Unable to reach the server. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function enhanceResume() {
+      const analysis = getSavedAnalysis();
+      if (!analysis?.reportId) {
+        alert("Analyze a resume first.");
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const res = await fetch(`${API}/enhance-resume/${analysis.reportId}`, {
+          method: "POST",
+          headers: { Authorization: localStorage.getItem("token") }
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          alert(data.error || "Failed to enhance resume");
+          return;
+        }
+
+        saveEnhancedResume(data.enhancedResume || "");
+        document.getElementById("enhancedResumePreview").innerText =
+          data.enhancedResume || "No enhanced resume generated.";
+        document.getElementById("downloadEnhancedBtn").disabled = !data.enhancedResume;
+      } catch (err) {
+        alert("Unable to reach the server. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function downloadEnhancedResume() {
+      const analysis = getSavedAnalysis();
+      if (!analysis?.reportId) {
+        alert("Analyze and enhance a resume first.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/download-enhanced/${analysis.reportId}`, {
+          headers: { Authorization: localStorage.getItem("token") }
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 401) {
+            handleUnauthorized();
+            return;
+          }
+
+          alert(data.error || "Failed to download enhanced resume");
+          return;
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "enhanced-resume.pdf";
+        link.click();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        alert("Unable to reach the server. Please try again.");
+      }
+    }
+
+    renderAnalysis(getSavedAnalysis());
+    syncProfile();
+  </script>
+</body>
+</html>
+

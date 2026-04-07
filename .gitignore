@@ -1,0 +1,6 @@
+backend/node_modules/
+backend/.env
+backend/database.db
+backend/uploads/
+backend/.railway/
+*.log

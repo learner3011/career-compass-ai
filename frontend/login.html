@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: radial-gradient(circle at top left, #ffe4be 0, transparent 30%), linear-gradient(135deg, #fff3e0, #f2e7d7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: rgba(255,255,255,0.96);
+      padding: 30px;
+      border-radius: 20px;
+      width: 340px;
+      box-shadow: 0 20px 45px rgba(91, 58, 17, 0.15);
+      border: 1px solid #efddc7;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 12px;
+      border: 1px solid #d8c6ae;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button:hover { opacity: 0.94; }
+    a { color: #d97706; }
+    .links {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .links a {
+      margin: 0 6px;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>Login</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <p style="text-align:center">New user? <a href="signup.html">Signup</a></p>
+  <div class="links">
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="support.html">Support</a>
+  </div>
+</div>
+<script>
+function getApiBase() {
+  const override = localStorage.getItem("careerCompassApiBaseUrl");
+  if (override) return override.replace(/\/$/, "");
+  if (window.location.protocol === "file:") return "http://localhost:5000";
+  if ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && window.location.port !== "5000") {
+    return `${window.location.protocol}//${window.location.hostname}:5000`;
+  }
+  return window.location.origin;
+}
+
+const API = getApiBase();
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Please enter email and password");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/login`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      if (data.requiresVerification) {
+        alert(data.error || "Verify your email first");
+        window.location.href = `verify.html?email=${encodeURIComponent(data.email || email)}`;
+        return;
+      }
+
+      alert(data.error || "Login failed");
+      return;
+    }
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("careerCompassUserEmail", data.email || email);
+    window.location.href = "home.html";
+  } catch (err) {
+    alert("Unable to reach the server. Please try again.");
+  }
+}
+</script>
+</body>
+</html>
