@@ -19,7 +19,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 app.use(helmet({
-  crossOriginResourcePolicy: false
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false
 }));
 app.use(cors({
   origin(origin, callback) {
