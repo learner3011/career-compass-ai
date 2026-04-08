@@ -18,6 +18,16 @@ const db = require("./db");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "";
+
+function normalizeOrigin(origin = "") {
+  return String(origin)
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/\/$/, "")
+    .toLowerCase();
+}
+
 app.use(helmet({
   crossOriginResourcePolicy: false,
   contentSecurityPolicy: false
@@ -34,18 +44,22 @@ app.use(cors({
       "http://127.0.0.1:5500",
       "http://localhost:5000",
       "http://127.0.0.1:5000"
-    ].filter(Boolean));
+    ].filter(Boolean).map(normalizeOrigin));
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    const isRailwayOrigin = /^https:\/\/[a-z0-9-]+\.up\.railway\.app$/i.test(normalizedOrigin);
 
     const isLocalhostOrigin = typeof origin === "string" && (
       /^http:\/\/localhost:\d+$/.test(origin) ||
       /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
     );
 
-    if (!origin || allowedOrigins.has(origin) || isLocalhostOrigin) {
+    if (!origin || allowedOrigins.has(normalizedOrigin) || isLocalhostOrigin || isRailwayOrigin) {
       return callback(null, true);
     }
 
     console.log("Blocked by CORS:", origin);
+    console.log("Expected FRONTEND_ORIGIN:", FRONTEND_ORIGIN);
     return callback(new Error("Not allowed by CORS"));
   }
 }));
@@ -68,7 +82,6 @@ const SMTP_SECURE = process.env.SMTP_SECURE === "true";
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
 const MAIL_FROM = process.env.MAIL_FROM || SMTP_USER || "no-reply@career-compass.ai";
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "";
 const frontendDir = path.join(__dirname, "..", "frontend");
 
 app.use(express.static(frontendDir));
