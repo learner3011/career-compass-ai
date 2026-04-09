@@ -18,6 +18,7 @@ const db = require("./db");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
+app.set("trust proxy", 1);
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "";
 
 function normalizeOrigin(origin = "") {
