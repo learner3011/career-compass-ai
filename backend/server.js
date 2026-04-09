@@ -83,6 +83,7 @@ const SMTP_SECURE = process.env.SMTP_SECURE === "true";
 const SMTP_USER = process.env.SMTP_USER || "";
 const SMTP_PASS = process.env.SMTP_PASS || "";
 const MAIL_FROM = process.env.MAIL_FROM || SMTP_USER || "no-reply@career-compass.ai";
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const RESEND_FROM = process.env.RESEND_FROM || "Career Compass AI <onboarding@resend.dev>";
 const frontendDir = path.join(__dirname, "..", "frontend");
@@ -162,6 +163,42 @@ function otpExpiryTimestamp() {
 }
 
 async function sendVerificationEmail(email, otp) {
+  if (BREVO_API_KEY) {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": BREVO_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        sender: {
+          email: MAIL_FROM,
+          name: "Career Compass AI"
+        },
+        to: [{ email }],
+        subject: "Career Compass AI verification code",
+        textContent: `Your Career Compass AI verification code is ${otp}. It expires in 10 minutes.`,
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
+            <h2 style="margin-bottom: 8px;">Verify your email</h2>
+            <p>Your Career Compass AI verification code is:</p>
+            <div style="font-size: 28px; font-weight: 700; letter-spacing: 6px; color: #d97706; margin: 18px 0;">
+              ${otp}
+            </div>
+            <p>This code expires in 10 minutes.</p>
+          </div>
+        `
+      })
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Brevo API error: ${response.status} ${body}`);
+    }
+
+    return;
+  }
+
   if (RESEND_API_KEY) {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
